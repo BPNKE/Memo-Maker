@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Real-Time Extractor - Dynamic NOC Pindaan (Final Logic)</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f4; }
+        .container { 
+            max-width: 900px; 
+            margin: 0 auto; 
+            background-color: #fff; 
+            padding: 30px; 
+            border-radius: 8px; 
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            font-family: Arial, sans-serif; 
+            font-size: 12pt;
+        }
+        h2 { color: #004d99; border-bottom: 2px solid #004d99; padding-bottom: 10px; margin-bottom: 20px; }
+        #textInput {
+            width: 100%;
+            height: 200px;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-family: monospace;
+            border: 2px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            resize: vertical;
+            font-size: 10pt;
+        }
+        /* Styling for the output box content */
+        #output-text .project-title {
+            font-weight: bold; 
+            font-size: 12pt;
+            margin-bottom: 15px;
+            display: block;
+            line-height: 1.4; 
+        }
+        #verification-data {
+            margin-top: 20px;
+            padding: 15px;
+            border-top: 2px dashed #ccc;
+            font-size: 10pt;
+            color: #555;
+            white-space: pre-wrap; 
+        }
+        /* Style for the final output textarea (manual copy area) */
+        #final-output-area {
+            width: 100%;
+            min-height: 150px;
+            padding: 15px;
+            margin-top: 20px;
+            /* CRITICAL: Ensure the box shows Arial 12 */
+            font-family: Arial, sans-serif !important; 
+            font-size: 12pt !important;
+            /* END CRITICAL */
+            border: 2px solid #28a745; 
+            background-color: #e6f7ff;
+            resize: none;
+            box-sizing: border-box;
+            cursor: pointer;
+            font-weight: normal; 
+        }
+        #copy-instructions {
+            margin-top: 10px;
+            font-weight: bold;
+            color: #004d99;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>📑 Real-Time Reference Sentence Generator</h2>
+        
+        <p>1. Copy the **Project Title** AND the **raw table data** together.</p>
+        <p>2. **Paste the data** into the box below. The output updates instantly!</p>
+        
+        <textarea id="textInput" placeholder="Paste the Project Title followed by the data fields..."></textarea>
+
+        <p id="progress-message">Waiting for input...</p>
+        
+        <div id="output-text">
+            <div id="verification-data">Verification data will appear here, separated from the main text.</div>
+        </div>
+
+        <div id="copy-instructions">
+            ✅ **Result Ready:** Click anywhere in the box below, then press **Ctrl+C / Cmd+C** to copy the final document text. **(Remember to set the font to Arial 12pt manually after pasting!)**
+        </div>
+        <textarea id="final-output-area" readonly></textarea>
+        
+    </div>
+
+    <script>
+        
+        // --- Date Formatting Function ---
+        function formatDateFormal(dateString) {
+            if (!dateString || dateString === 'N/A' || !dateString.includes('-')) {
+                return dateString;
+            }
+
+            const [day, monthAbbr, year] = dateString.split('-');
+            const monthMap = {
+                'JAN': 'Januari', 'FEB': 'Februari', 'MAR': 'Mac', 'APR': 'April',
+                'MAY': 'Mei', 'JUN': 'Jun', 'JUL': 'Julai', 'AUG': 'Ogos',
+                'SEP': 'September', 'OCT': 'Oktober', 'NOV': 'November', 'DEC': 'Disember'
+            };
+            const formalMonth = monthMap[monthAbbr.toUpperCase()];
+            
+            return formalMonth ? `${day} ${formalMonth} ${year}` : dateString; 
+        }
+        
+        // --- Dynamic NOC Variation Function (Final) ---
+        function generateNOCVariationText(title) {
+            if (!title) return 'skop, komponen, output dan tempoh';
+
+            const upperTitle = title.toUpperCase();
+            const variations = [];
+
+            // --- PRIORITY 1: UNIQUE PHRASES ---
+            
+            // 1. COST ADJUSTMENT
+            if (upperTitle.includes('PELARASAN KOS PROJEK') || upperTitle.includes('PELARASAN KOS')) {
+                return 'pelarasan kos';
+            }
+            
+            // 2. PROJECT NAME CHANGE
+            if (upperTitle.includes('PERUBAHAN BAGI NAMA PROJEK') || upperTitle.includes('TUKAR NAMA PROJEK') ) {
+                return 'nama projek';
+            }
+            
+            // 3. BUTIRAN (Creation/Establishment)
+            if (upperTitle.includes('PEWUJUDAN BUTIRAN')) {
+                return 'pewujudan butiran bagi projek';
+            }
+            
+            // --- PRIORITY 2: SPECIFIC COMPOUND PHRASES (Cost, Scope, Time) ---
+            
+            // 1. Cost/Ceiling Changes
+            if (upperTitle.includes('PENINGKATAN KOS') || upperTitle.includes('PENAMBAHAN KOS') || upperTitle.includes('KENAIKAN KOS') || upperTitle.includes('PERTAMBAHAN KOS')) {
+                if (!variations.includes('kos')) variations.push('kos');
+            }
+            if (upperTitle.includes('PENINGKATAN SILING PROJEK')) {
+                if (!variations.includes('kos')) variations.push('peningkatan siling'); 
+            }
+            
+            // 2. Scope/Component Changes
+            if (upperTitle.includes('PINDAAN SKOP')) {
+                if (!variations.includes('skop')) variations.push('skop');
+            }
+            if (upperTitle.includes('PINDAAN KOMPONEN') || upperTitle.includes('OUTPUT')) {
+                if (!variations.includes('komponen/output')) variations.push('komponen/output');
+            }
+            
+            // 3. Time/Duration Changes
+            if (upperTitle.includes('TEMPOH') || upperTitle.includes('LANJUTAN MASA')) {
+                if (!variations.includes('tempoh')) variations.push('tempoh');
+            }
+
+            // --- PRIORITY 3: STANDARD/FALLBACK KEYWORDS ---
+
+            if (variations.length === 0) {
+                 if (upperTitle.includes('SKOP')) {
+                    variations.push('skop');
+                }
+                if (upperTitle.includes('KOMPONEN')) {
+                    variations.push('komponen/output');
+                }
+                if (upperTitle.includes('KOS') || upperTitle.includes('SILING')) {
+                    variations.push('kos');
+                }
+                if (upperTitle.includes('TEMPOH')) {
+                    variations.push('tempoh');
+                }
+            }
+            
+            // --- Final Formatting ---
+
+            const uniqueVariations = [...new Set(variations)];
+            let resultPhrase;
+
+            if (uniqueVariations.length === 0) {
+                // Return the default long phrase which will trigger the generic sentence logic below
+                return 'skop, komponen, output dan tempoh'; 
+            } else if (uniqueVariations.length === 1) {
+                // Single item
+                resultPhrase = uniqueVariations[0];
+            } else {
+                // Multiple items (e.g., skop, kos, dan tempoh)
+                const last = uniqueVariations.pop();
+                resultPhrase = uniqueVariations.join(', ') + ' dan ' + last;
+            }
+            return resultPhrase;
+        }
+
+        // --- Core Logic Functions ---
+        
+        function handleInputEvent() {
+            const fullText = document.getElementById('textInput').value;
+            const progressElement = document.getElementById('progress-message');
+            const finalOutputArea = document.getElementById('final-output-area');
+
+            if (!fullText.trim()) {
+                document.getElementById('output-text').innerHTML = 'Formatted Output will appear here.';
+                document.getElementById('verification-data').textContent = 'Verification data will appear here, separated from the main text.';
+                finalOutputArea.value = 'Clean sentence will appear here for manual copying...';
+                progressElement.textContent = 'Waiting for input...';
+                return;
+            }
+            
+            progressElement.textContent = 'Processing in real-time...';
+            processExtractedText(fullText);
+        }
+        
+        function extractProjectTitle(text) {
+            const stopCondition = /(NOC-ID|TARIKH\s*SURAT|TARIKH\s*PERMOHONAN|NAMA\s*KEMENTERIAN|NO\.\s*RUJUKAN\s*SURAT|TARIKH\s*DITERIMA)/i;
+            const titleLines = [];
+            
+            const lines = text.split('\n');
+            
+            for (const line of lines) {
+                const trimmedLine = line.trim();
+                if (!trimmedLine) continue; 
+
+                if (stopCondition.test(trimmedLine)) {
+                    break;
+                }
+                titleLines.push(trimmedLine);
+            }
+            
+            let title = titleLines.join(' ').replace(/\s{2,}/g, ' ').trim();
+            return title || "SILA MASUKKAN TAJUK PROJEK DI ATAS DATA LAPORAN";
+        }
+
+
+        function processExtractedText(fullText) {
+            const outputElement = document.getElementById('output-text');
+            const verificationElement = document.getElementById('verification-data');
+            const finalOutputArea = document.getElementById('final-output-area');
+
+            const projectTitle = extractProjectTitle(fullText);
+            
+            // --- Extraction Step & Formatting ---
+            const rawText = fullText.replace(/\s+/g, ' ').toUpperCase(); 
+            const nextLabelsRegexRujukan = /LAMPIRAN|KATEGORI NOC|ULASAN BAHAGIAN YANG DIPERLUKAN|STATUS NOC|BAHAGIAN PENYELARAS/i;
+            const nextLabelsRegexKementerian = /BAHAGIAN PENYELARAS/i; 
+
+            function extractValue(keyword, text) {
+                
+                if (keyword === 'NAMA KEMENTERIAN') {
+                    const kementerianRegex = new RegExp('NAMA KEMENTERIAN\\s*([\\w\\s\\/\\.\\(\\)\\-]+?)\\s*(?:' + nextLabelsRegexKementerian.source + '|$)', 'i' );
+                    const match = text.match(kementerianRegex);
+                    if (match && match[1]) {
+                        return match[1].trim(); 
+                    }
+                    return 'N/A';
+                }
+                
+                if (keyword === 'NO. RUJUKAN SURAT') {
+                    const rujukanRegex = new RegExp('NO\\. RUJUKAN SURAT\\s*([\\w\\/\\-\\.\\s\\(\\)]+?)\\s*(?:' + nextLabelsRegexRujukan.source + '|$)', 'i' );
+                    const rujukanMatch = text.match(rujukanRegex);
+                    if (rujukanMatch && rujukanMatch[1]) {
+                        return rujukanMatch[1].trim();
+                    }
+                    return 'N/A';
+                }
+                
+                const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const regex = new RegExp(escapedKeyword + '\\s*([\\w\\/\\-\\.\\(\\)]+)', 'i');
+                const match = text.match(regex);
+                
+                if (match && match[1]) {
+                    return match[1].trim().replace(/\s*-\s*/g, '-');
+                }
+                
+                return 'N/A';
+            }
+
+            const rawTarikhSurat = extractValue('TARIKH SURAT', rawText); 
+            const rawTarikhPermohonan = extractValue('TARIKH PERMOHONAN', rawText); 
+            const rawTarikhDiterima = extractValue('TARIKH DITERIMA', rawText); 
+            const rawTarikhEmel = rawTarikhDiterima !== 'N/A' ? rawTarikhDiterima : rawTarikhPermohonan;
+
+            const kementerian = extractValue('NAMA KEMENTERIAN', fullText); 
+            const noRujukan = extractValue('NO. RUJUKAN SURAT', fullText); 
+
+            const tarikhSurat = formatDateFormal(rawTarikhSurat); 
+            const tarikhPermohonan = formatDateFormal(rawTarikhPermohonan); 
+            const tarikhEmel = formatDateFormal(rawTarikhEmel); 
+
+            // --- Sentence Generation ---
+            const greeting = "Tuan/Puan,"; 
+            
+            const nocVariationPhrase = generateNOCVariationText(projectTitle); 
+
+            // Check if the phrase is the default/fallback, and switch the entire sentence.
+            let introSentence;
+            if (nocVariationPhrase === 'skop, komponen, output dan tempoh') {
+                // Use the generic sentence (already uses tuan/puan)
+                introSentence = "Sebagaimana tuan/puan sedia maklum, butiran NOC adalah seperti berikut:";
+            } else {
+                // Use the specific sentence, ADJUSTED to use tuan/puan
+                introSentence = `Sebagaimana tuan/puan sedia maklum, NOC bagi ${nocVariationPhrase} adalah seperti berikut:`;
+            }
+            
+            // REFERENCE SENTENCE 
+            const referenceSentence = `Dengan hormatnya merujuk kepada perkara di atas, sistem INOC bertarikh ${tarikhPermohonan}, surat ${kementerian} dengan No. rujukan: ${noRujukan} bertarikh ${tarikhSurat} dan e-mel bertarikh ${tarikhEmel} adalah berkaitan.`;
+
+            // FINAL DOCUMENT STRUCTURE:
+            const finalDocumentText = `${greeting}\n\n${projectTitle}\n\n${referenceSentence}\n\n${introSentence}`; 
+
+            const verificationOutput = `
+Verification of Extracted Data:
+Project Title: ${projectTitle}
+NOC Variation Phrase: ${nocVariationPhrase}
+Intro Sentence Used: ${introSentence}
+INOC Date (Permohonan): ${tarikhPermohonan} (Raw: ${rawTarikhPermohonan})
+Ministry Used: ${kementerian}
+Surat Rujukan: ${noRujukan}
+Surat Date: ${tarikhSurat} (Raw: ${rawTarikhSurat})
+E-mel Date (Diterima/Permohonan): ${tarikhEmel} (Raw: ${rawTarikhEmel})
+`;
+
+            // 3. Update the HTML output elements
+            document.getElementById('progress-message').textContent = 'Extraction successful! Copy the clean text below.';
+            
+            finalOutputArea.value = finalDocumentText; 
+            
+            verificationElement.textContent = verificationOutput.trim();
+
+            // 4. Update the visual display 
+            outputElement.innerHTML = `
+                ${greeting}<br><br>
+                <span class="project-title">${projectTitle}</span><br>
+                <span id="reference-sentence-display">${referenceSentence}</span>
+                <br><br>
+                <span>${introSentence}</span>
+                <div id="verification-data">${verificationElement.textContent}</div>`;
+            
+            // 5. Automatically select the text in the copy area (for instant manual copy)
+            finalOutputArea.select(); 
+        }
+
+        // --- Attaching Event Listener on Page Load ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const textarea = document.getElementById('textInput');
+            textarea.addEventListener('input', handleInputEvent);
+            
+            document.getElementById('final-output-area').addEventListener('click', function() {
+                this.select();
+            });
+
+            handleInputEvent();
+        });
+    </script>
+
+</body>
+</html>
