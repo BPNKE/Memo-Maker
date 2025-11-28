@@ -1,843 +1,494 @@
+
+
+
 <!DOCTYPE html>
 <html lang="ms">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gabungan Penjana Rujukan NOC & Penganalisis Projek</title>
+    <title>Gabungan Penjana Rujukan NOC & Penganalisis Projek v8.8</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
+                    fontFamily: { sans: ['Inter', 'sans-serif'] }
                 }
             }
         }
     </script>
     <style>
-        /* Tetapan Asas (Projek Analyzer) */
-        .table-output {
-            width: 100%;
-            border-collapse: collapse;
-            border: 2px solid #1f2937; 
-        }
-        .table-output th, .table-output td {
-            border: 1px solid #d1d5db; 
-            padding: 12px;
-            text-align: left;
-            word-wrap: break-word; 
-            max-width: 600px;
-        }
-        .table-output th {
-            background-color: #e5e7eb; 
-            font-weight: 700;
-            color: #1f2937;
-        }
-        #outputTable, #tableCondensed, #closingSentenceArea, #costBreakdownTable {
-            user-select: all; 
-        }
-        .spent-amount {
-            color: #059669; 
-            font-weight: 700;
-        }
-        .text-section-header {
-             color: #4f46e5; 
-             font-weight: 800;
-             text-transform: uppercase;
-        }
+        /* --- GENERAL --- */
+        body { font-family: 'Inter', sans-serif; background-color: #f9fafb; }
         
-        /* Tetapan Asas (NOC Generator) */
-        .noc-container {
-            font-family: Arial, sans-serif; 
-            font-size: 12pt;
+        /* --- INPUTS --- */
+        .input-label { display: block; font-size: 0.7rem; font-weight: 700; color: #6b7280; margin-bottom: 0.1rem; text-transform: uppercase; }
+        .std-input { width: 100%; padding: 0.4rem; border: 1px solid #d1d5db; border-radius: 0.375rem; font-size: 0.875rem; transition: border-color 0.15s; }
+        .std-select { width: 100%; padding: 0.3rem; border: 1px solid #9ca3af; border-radius: 0.375rem; font-size: 0.8rem; background-color: #f3f4f6; margin-bottom: 4px; }
+        .std-input:focus, .std-select:focus { border-color: #4f46e5; outline: none; ring: 2px solid #e0e7ff; }
+        
+        /* --- TABLES (ON SCREEN PREVIEW) --- */
+        .excel-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            font-family: 'Arial', sans-serif; 
+            font-size: 10pt; 
+            color: black; 
+            border: 1px solid black; 
+            background: white; 
+            line-height: 1.0;
         }
-        #nocInput {
-            width: 100%;
-            height: 200px;
-            padding: 15px;
-            margin-bottom: 20px;
-            font-family: monospace;
-            border: 2px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box;
-            resize: vertical;
-            font-size: 10pt;
-        }
-        #noc-verification-data {
-            margin-top: 20px;
-            padding: 15px;
-            border-top: 2px dashed #ccc;
-            font-size: 10pt;
-            color: #555;
-            white-space: pre-wrap; 
-        }
-        #noc-final-output-area {
-            width: 100%;
-            min-height: 150px;
-            padding: 15px;
-            margin-top: 20px;
-            font-family: Arial, sans-serif !important; 
-            font-size: 12pt !important;
-            border: 2px solid #28a745; 
-            background-color: #e6f7ff;
-            resize: none;
-            box-sizing: border-box;
-            cursor: pointer;
-            font-weight: normal; 
-        }
-        .noc-project-title {
+        .excel-table th { 
+            border: 1px solid black; 
+            background-color: #f0f0f0; 
             font-weight: bold; 
-            font-size: 12pt;
-            margin-bottom: 15px;
-            display: block;
-            line-height: 1.4; 
+            text-align: center; 
+            padding: 2px 4px;
+            vertical-align: middle;
         }
-        .copy-instructions {
-            margin-top: 10px;
-            font-weight: bold;
-            color: #004d99;
+        .excel-table td { 
+            border: 1px solid black; 
+            padding: 2px 4px; 
+            text-align: left; 
+            vertical-align: top; 
+            height: auto;
         }
-        /* Style for the new closing sentence area */
-        #closingSentenceArea {
-            font-family: 'Arial', sans-serif;
-            font-size: 11pt;
-            line-height: 1.5;
-            white-space: pre-wrap;
-        }
+        .excel-table td.center-col { text-align: center; }
+        .excel-table td.money-col { text-align: right; white-space: nowrap; font-weight: bold; }
+        .excel-table tr.highlight-row { background-color: #fffbeb; font-weight: bold; }
         
-        /* --- COPY-PASTE FRIENDLY TABLE STYLE (EXCEL/WORD) --- */
-        .excel-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-family: 'Arial', sans-serif;
-            font-size: 11pt;
-            color: black;
-            border: 1px solid black; /* Solid outer border */
-            margin-bottom: 20px;
+        /* --- MASTER MEMO --- */
+        #masterMemoContainer {
+            background-color: white; border: 1px solid #ccc; padding: 50px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); font-family: 'Arial', sans-serif; 
+            font-size: 11pt; 
+            line-height: 1.0; 
+            color: black; margin-top: 20px;
+            text-align: justify;
         }
-        .excel-table th, .excel-table td {
-            border: 1px solid black; /* Solid inner borders */
-            padding: 6px 8px; /* Tighter padding for Excel */
-            text-align: left;
-            vertical-align: top;
-        }
-        .excel-table th {
-            background-color: #f0f0f0; /* Very light gray for printing/Word */
-            font-weight: bold;
-            text-align: center;
-        }
-        .excel-table td.center-col {
-            text-align: center;
-        }
-        .excel-table td.money-col {
-            text-align: right; /* Right align numbers */
-            white-space: nowrap;
-        }
-        .excel-table tr.highlight-row {
-            font-weight: bold;
-        }
+
+        /* --- SPACING FIXES --- */
+        #masterMemoContainer p { margin-bottom: 1em; margin-top: 0; }
+        #masterMemoContainer p:last-child { margin-bottom: 0; }
+        #master-noc, #master-condensed, #master-breakdown, #master-manual-text { margin-bottom: 20px; }
+        .table-container { margin-bottom: 20px; }
+
+        /* --- OTHER --- */
+        #nocInput { font-family: monospace; font-size: 10pt; }
+        .diff-increase { color: #dc2626; font-weight: bold; }
+        .diff-decrease { color: #16a34a; font-weight: bold; }
+        .percentage-tag { font-size: 0.85em; color: #000; font-weight: 800; margin-left: 4px; }
         
-        /* Percentage styling specifically for copy-paste */
-        .diff-increase { color: #dc2626; font-weight: bold; } /* Red */
-        .diff-decrease { color: #16a34a; font-weight: bold; } /* Green */
-        .percentage-tag { font-size: 0.9em; color: #000; font-weight: 800; }
+        @media print {
+            body * { visibility: hidden; }
+            #masterMemoContainer, #masterMemoContainer * { visibility: visible; }
+            #masterMemoContainer { position: absolute; left: 0; top: 0; width: 100%; padding: 0; margin: 0; border: none; box-shadow: none; }
+        }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen p-4 sm:p-8 font-sans">
+<body class="p-4 sm:p-8">
 
-    <div class="max-w-7xl mx-auto bg-white p-6 sm:p-10 rounded-xl shadow-2xl">
-        <h1 class="text-3xl font-bold text-gray-800 mb-6 border-b pb-2 text-center">
-            Papan Pemuka Analisis Projek (Dua Fungsi)
-        </h1>
+    <div class="max-w-7xl mx-auto bg-white p-6 sm:p-10 rounded-xl shadow-2xl border border-gray-200">
+        
+        <div class="mb-8 pb-4 border-b flex flex-wrap gap-4 justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800">Papan Pemuka Analisis Projek</h1>
+                <p class="text-sm text-gray-500">Versi 8.8 (Clean Output - Word Only)</p>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="saveData()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-bold text-sm flex items-center gap-2 shadow">💾 Simpan Data</button>
+                <button onclick="document.getElementById('fileInput').click()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded font-bold text-sm flex items-center gap-2 shadow">📂 Muat Naik</button>
+                <input type="file" id="fileInput" class="hidden" accept=".json" onchange="loadData(this)">
+                <button onclick="location.reload()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded font-bold text-sm flex items-center gap-2 shadow">🔄 Reset</button>
+            </div>
+        </div>
         
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
             
-            <div class="noc-container lg:pr-4 lg:border-r border-gray-200">
-                <h2 class="text-2xl font-semibold text-blue-700 mb-4">Penjana Ayat Rujukan NOC</h2>
-                <p class="text-gray-600 mb-4">
-                    Tampal **Tajuk Projek** diikuti oleh **data NOC mentah** untuk menjana ayat rujukan.
-                </p>
-                
-                <textarea id="nocInput" placeholder="Tampal Tajuk Projek diikuti data mentah (TARIKH SURAT, NO. RUJUKAN, dll)..." oninput="handleNocInputEvent()"></textarea>
-
-                <p id="noc-progress-message">Waiting for input...</p>
-                
-                <div id="noc-output-text">
-                    <div id="noc-verification-data">Verification data will appear here, separated from the main text.</div>
+            <div class="lg:border-r lg:pr-6 border-gray-200">
+                <h2 class="text-xl font-bold text-blue-700 mb-3">1. Penjana Ayat Rujukan NOC</h2>
+                <p class="text-xs text-gray-500 mb-2">Tampal Tajuk & Data Mentah:</p>
+                <textarea id="nocInput" class="std-input h-48 mb-2" placeholder="Tampal data di sini..." oninput="handleNocInput()"></textarea>
+                <div id="noc-output-storage" class="hidden"></div>
+                <div class="bg-blue-50 p-3 rounded border border-blue-200 text-sm text-blue-800">
+                    <strong>Status:</strong> <span id="noc-status">Menunggu input...</span>
                 </div>
-
-                <div class="copy-instructions">
-                    ✅ **Result Ready:** Klik kotak di bawah, kemudian tekan **Ctrl+C / Cmd+C** untuk menyalin teks dokumen akhir.
-                </div>
-                <textarea id="noc-final-output-area" readonly></textarea>
             </div>
             
-            <div class="lg:pl-4">
-                <h2 class="text-2xl font-semibold text-indigo-700 mb-4">Penganalisis Teks Projek (Jana Jadual)</h2>
-                <p class="text-gray-600 mb-4">
-                    Tampal ayat atau perenggan ringkasan projek di sini untuk menjana jadual butiran.
-                </p>
-
-                <textarea id="inputText" rows="10" 
-                          class="w-full p-4 border-2 border-indigo-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out resize-y" 
-                          placeholder="Tampal teks ringkasan projek di sini..."
-                          oninput="handleTextareaChange(); generateTable();"></textarea>
-
-                <div class="mt-4 p-3 border-2 border-gray-200 rounded-lg bg-gray-50">
-                     <label for="manualProjectNameInput" class="block text-sm font-medium text-gray-700 mb-1">Input Manual Nama Projek (Override)</label>
-                     <input type="text" id="manualProjectNameInput" placeholder="Cth: Pembinaan Blok Tambahan PPKI SK Ulu..." 
-                           class="w-full p-2 border border-yellow-500 rounded-lg focus:ring-yellow-500 focus:border-yellow-500" oninput="generateTable()">
-                </div>
+            <div class="lg:pl-2">
+                <h2 class="text-xl font-bold text-indigo-700 mb-3">2. Penganalisis & Editor Data</h2>
+                <p class="text-xs text-gray-500 mb-2">Tampal Teks Projek untuk pengisian automatik:</p>
                 
-                <div class="mt-4 flex flex-col space-y-4">
+                <textarea id="inputText" class="std-input h-32 mb-4 border-indigo-300 focus:border-indigo-500" 
+                          placeholder="Tampal perenggan projek di sini..." oninput="parseTextToInputs()"></textarea>
+
+                <div class="bg-gray-50 p-4 rounded-lg border border-gray-300 space-y-3">
                     
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 border p-3 rounded-lg bg-indigo-50/50">
-                        <h4 class="col-span-2 text-indigo-700 font-bold mb-2 border-b border-indigo-200 pb-2">1. Kos Diluluskan (Asal)</h4>
-                        
-                        <div class="w-full">
-                            <label for="approvedCostSelect" class="block text-sm font-medium text-gray-700 mb-1">Pilihan Cepat:</label>
-                            <select id="approvedCostSelect" 
-                                    class="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" onchange="generateTable()">
-                                <option value="auto">-- Pilih Kos Automatik (Teks Asal) --</option>
-                            </select>
-                        </div>
-                        
-                        <div class="w-full">
-                            <label for="manualApprovedCostInput" class="block text-sm font-medium text-gray-700 mb-1">Input Manual:</label>
-                            <input type="text" id="manualApprovedCostInput" placeholder="Cth: 1,838,000.00" 
-                                   class="w-full p-2 border border-gray-300 rounded-lg focus:ring-yellow-500 focus:border-yellow-500" oninput="generateTable()">
-                        </div>
+                    <div>
+                        <label class="input-label">Nama Projek</label>
+                        <input type="text" id="inp_projectName" class="std-input font-bold">
                     </div>
-                    
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 border p-3 rounded-lg bg-green-50/50">
-                        <h4 class="col-span-2 text-green-700 font-bold mb-2 border-b border-green-200 pb-2">2. Penambahan Kos / AKA</h4>
-                        
-                        <div class="w-full">
-                            <label for="additionalCostSelect" class="block text-sm font-medium text-gray-700 mb-1">Pilihan Cepat:</label>
-                            <select id="additionalCostSelect" 
-                                    class="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" onchange="generateTable()">
-                                <option value="auto">-- Pilih Kos Automatik (Teks Asal) --</option>
-                            </select>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="input-label">Kod Projek (P)</label><input type="text" id="inp_codeP" class="std-input"></div>
+                        <div><label class="input-label">Maklumat Kelulusan</label><input type="text" id="inp_approvalInfo" class="std-input font-bold text-blue-800"></div>
+                    </div>
+
+                    <hr class="border-gray-300">
+
+                    <div class="grid grid-cols-3 gap-3">
+                        <div>
+                            <label class="input-label text-indigo-700">Kos Asal [A]</label>
+                            <select id="sel_costA" class="std-select" onchange="syncSelectToInput('sel_costA', 'inp_costA')"></select>
+                            <input type="text" id="inp_costA" class="std-input text-right" placeholder="0.00">
                         </div>
-                        
-                        <div class="w-full">
-                            <label for="manualAdditionalCostInput" class="block text-sm font-medium text-gray-700 mb-1">Input Manual:</label>
-                            <input type="text" id="manualAdditionalCostInput" placeholder="Cth: 209,088.60" 
-                                   class="w-full p-2 border border-gray-300 rounded-lg focus:ring-yellow-500 focus:border-yellow-500" oninput="generateTable()">
+                        <div>
+                            <label class="input-label text-green-700">Penambahan</label>
+                            <select id="sel_costAdd" class="std-select" onchange="syncSelectToInput('sel_costAdd', 'inp_costAdd')"></select>
+                            <input type="text" id="inp_costAdd" class="std-input text-right" placeholder="0.00">
+                        </div>
+                        <div>
+                            <label class="input-label text-red-700">Kos Baharu (Rev)</label>
+                            <select id="sel_costRev" class="std-select" onchange="syncSelectToInput('sel_costRev', 'inp_costRev')"></select>
+                            <input type="text" id="inp_costRev" class="std-input text-right" placeholder="0.00">
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 border p-3 rounded-lg bg-red-50/50">
-                         <h4 class="col-span-2 text-red-700 font-bold mb-2 border-b border-red-200 pb-2">3. Kos Dipinda / Baharu</h4>
-                        
-                        <div class="w-full">
-                            <label for="revisedCostSelect" class="block text-sm font-medium text-gray-700 mb-1">Pilihan Cepat:</label>
-                            <select id="revisedCostSelect" 
-                                    class="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" onchange="generateTable()">
-                                <option value="auto">-- Pilih Kos Automatik (Teks Asal) --</option>
-                            </select>
+                    <hr class="border-gray-300">
+
+                    <div>
+                        <label class="input-label text-gray-700 bg-yellow-100 inline-block px-1">Ulasan/Ayat Tambahan (Manual)</label>
+                        <textarea id="inp_manualText" class="std-input h-24" placeholder="Taip ulasan tambahan di sini..."></textarea>
+                    </div>
+
+                    <hr class="border-gray-300">
+
+                    <div class="grid grid-cols-1 gap-2">
+                        <div class="flex gap-2 items-end">
+                            <div class="w-7/12"><label class="input-label">Label Item [B]</label><input type="text" id="inp_labelB" class="std-input" value="Kos PDA Asal [B]"></div>
+                            <div class="w-5/12"><label class="input-label">Jumlah [B]</label><select id="sel_valB" class="std-select" onchange="syncSelectToInput('sel_valB', 'inp_valB')"></select><input type="text" id="inp_valB" class="std-input text-right"></div>
                         </div>
-                        
-                        <div class="w-full">
-                            <label for="manualRevisedCostInput" class="block text-sm font-medium text-gray-700 mb-1">Input Manual:</label>
-                            <input type="text" id="manualRevisedCostInput" placeholder="Cth: 2,047,888.60" 
-                                   class="w-full p-2 border border-gray-300 rounded-lg focus:ring-yellow-500 focus:border-yellow-500" oninput="generateTable()">
+                        <div class="flex gap-2 items-end">
+                            <div class="w-7/12"><label class="input-label">Label Item [D]</label><input type="text" id="inp_labelD" class="std-input" value="Kos PDA Pindaan [D]"></div>
+                            <div class="w-5/12"><label class="input-label">Jumlah [D]</label><select id="sel_valD" class="std-select" onchange="syncSelectToInput('sel_valD', 'inp_valD')"></select><input type="text" id="inp_valD" class="std-input text-right"></div>
                         </div>
                     </div>
 
-                    <hr class="border-gray-300"/>
-
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 border p-3 rounded-lg bg-yellow-50/50">
-                         <h4 class="col-span-2 text-yellow-700 font-bold mb-2 border-b border-yellow-200 pb-2">4. Override Kos Perincian (PDA/AKA)</h4>
-                        
-                        <div class="w-full">
-                            <label for="selectPDAAsalCost" class="block text-sm font-medium text-gray-700 mb-1">PDA Asal [B] (Auto-Detected):</label>
-                            <select id="selectPDAAsalCost" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" onchange="generateTable()">
-                                <option value="auto">-- Pilih Auto --</option>
-                            </select>
-                        </div>
-                        <div class="w-full">
-                            <label for="manualPDAAsalInput" class="block text-sm font-medium text-gray-700 mb-1">Manual B:</label>
-                            <input type="text" id="manualPDAAsalInput" placeholder="Cth: 19,088,850.00" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-yellow-500 focus:border-yellow-500" oninput="generateTable()">
-                        </div>
-                        
-                        <div class="w-full">
-                            <label for="selectPDAPindaanCost" class="block text-sm font-medium text-gray-700 mb-1">PDA Pindaan [D] (Auto-Detected):</label>
-                            <select id="selectPDAPindaanCost" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" onchange="generateTable()">
-                                <option value="auto">-- Pilih Auto --</option>
-                            </select>
-                        </div>
-                        <div class="w-full">
-                            <label for="manualPDAPindaanInput" class="block text-sm font-medium text-gray-700 mb-1">Manual D:</label>
-                            <input type="text" id="manualPDAPindaanInput" placeholder="Cth: 35,481,097.16" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-yellow-500 focus:border-yellow-500" oninput="generateTable()">
-                        </div>
-                    </div>
-
-                    
-                    <button onclick="generateTable()" 
-                            class="w-full px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700">
-                        Jana Jadual (Projek Analyzer)
+                    <button onclick="generateOutputs()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded shadow mt-4">
+                        KEMASKINI DATA & JANA MEMO
                     </button>
                 </div>
-                
-                <div id="outputContainer" class="mt-8">
-                    <h3 class="text-xl font-semibold text-gray-800 mb-3">Ringkasan Butiran Projek (Detail)</h3>
-                    <div id="outputTable">
-                        </div>
-
-                    <div id="condensedOutputContainer">
-                        </div>
-
-                    <div id="costBreakdownContainer" class="mt-8">
-                        <h3 class="text-xl font-semibold text-gray-800 mb-3">Jadual Perincian Kenaikan Kos</h3>
-                        <p class="text-sm text-gray-500 mb-2 italic">Format Excel (Sedia Disalin)</p>
-                        <div id="costBreakdownTable"></div>
-                    </div>
-                    
-
-                    <div id="closingSentenceContainer" class="mt-8">
-                        <h3 class="text-xl font-semibold text-gray-800 mb-3">Teks Penutup & Ulasan Piawai (Sedia Disalin)</h3>
-                        <textarea id="closingSentenceArea" rows="15" class="w-full p-4 border-2 border-green-300 rounded-lg bg-green-50 focus:ring-green-500 focus:border-green-500 text-sm" readonly></textarea>
-                    </div>
-
-                </div>
-
-                <div id="messageBox" class="mt-6 p-4 text-sm text-red-700 bg-red-100 rounded-lg hidden" role="alert">
-                    </div>
             </div>
-            
         </div>
+
+        <div class="mt-12 border-t-4 border-gray-800 pt-8">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-3xl font-bold text-gray-900">MEMO LENGKAP (GABUNGAN)</h2>
+                <div>
+                    <button onclick="downloadWord()" class="bg-blue-700 hover:bg-blue-800 text-white px-6 py-3 rounded-lg font-bold shadow-lg flex items-center gap-2">
+                        💾 Muat Turun Word (.doc)
+                    </button>
+                </div>
+            </div>
+
+            <div id="masterMemoContainer">
+                <div id="master-noc" class="mb-8 text-black text-justify"><span class="text-gray-400 italic">[Rujukan NOC akan muncul di sini...]</span></div>
+                
+                <div id="master-condensed" class="table-container"></div>
+
+                <div id="master-breakdown" class="table-container"></div>
+
+                <div id="master-manual-text" class="mb-8 text-justify text-black"></div>
+
+                <div id="master-closing" class="text-justify text-black"></div>
+            </div>
+        </div>
+
     </div>
 
     <script>
-        
-        // =================================================================
-        // SKRIP UTAMA: PROJEK ANALYZER
-        // =================================================================
-        
-        function safeExtract(text, regex, groupIndex = 1) {
-            const match = text.match(regex);
-            return match && match[groupIndex] ? match[groupIndex].trim() : "Tiada Data";
+        // --- UTILS ---
+        const getNum = (str) => { if (!str) return 0; let s = str.toString().replace(/(RM| |\,)/g, ''); return parseFloat(s) || 0; };
+        const fmtMoney = (num) => { if (isNaN(num)) return "0.00"; return "RM" + num.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,'); };
+        const safeExtract = (text, regex, idx=1) => { let m = text.match(regex); return (m && m[idx]) ? m[idx].trim() : ""; };
+
+        // --- EXTRACTORS ---
+        function smartExtractApprovalInfo(text) {
+            let clean = text.replace(/\n/g, ' ');
+            let complexMatch = clean.match(/Rolling Plan\s+([\w-]+).*?(Tahun\s+\d{4})?.*?(\(RP\d+.*?\))/i);
+            if (complexMatch) return `Rolling Plan ${complexMatch[1]}${complexMatch[2]?" "+complexMatch[2]:""} ${complexMatch[3]}`;
+            let yearMatch = clean.match(/Rolling Plan\s+[\w-]+\s+Tahun\s+\d{4}/i);
+            if (yearMatch) return yearMatch[0];
+            let simpleMatch = clean.match(/Rolling Plan\s+[\w-]+/i);
+            if (simpleMatch) return simpleMatch[0];
+            return "RP (Sila isi manual)";
         }
 
-        // --- SMART PROJECT NAME EXTRACTOR ---
         function smartExtractProjectName(text) {
-            const states = [
-                "JOHOR", "KEDAH", "KELANTAN", "MELAKA", "NEGERI SEMBILAN", "PAHANG", "PERAK", "PERLIS", 
-                "PULAU PINANG", "SABAH", "SARAWAK", "SELANGOR", "TERENGGANU", "WILAYAH PERSEKUTUAN", 
-                "KUALA LUMPUR", "LABUAN", "PUTRAJAYA", "MALAYSIA"
-            ];
-            const starts = [
-                "PROJEK", "PROGRAM", "CADANGAN", "MEMBINA", "NAIKTARAF", "NAIK TARAF", 
-                "PENYELENGGARAAN", "PEROLEHAN", "KERJA-KERJA", "KAJIAN", "PEMBINAAN", "MENAIKTARAF"
-            ];
-            
-            const stateRegexStr = `\\b(${starts.join('|')})\\b.{5,150}?\\b(${states.join('|')})\\b`;
-            const stateRegex = new RegExp(stateRegexStr, 'i');
-            const stateMatch = text.match(stateRegex);
-            
-            if (stateMatch) {
-                let clean = stateMatch[0].replace(/\s+/g, ' ').replace(/[.,:;]+$/, '').trim();
-                return clean;
-            }
-            
-            const generalRegexStr = `\\b(${starts.join('|')})\\b(?:\\s+\\S+){1,14}`;
-            const generalRegex = new RegExp(generalRegexStr, 'i');
-            const generalMatch = text.match(generalRegex);
-            
+            let cleanText = text.replace(/\n/g, ' ');
+            const states = ["JOHOR", "KEDAH", "KELANTAN", "MELAKA", "NEGERI SEMBILAN", "PAHANG", "PERAK", "PERLIS", "PULAU PINANG", "SABAH", "SARAWAK", "SELANGOR", "TERENGGANU", "WILAYAH PERSEKUTUAN", "KUALA LUMPUR", "LABUAN", "PUTRAJAYA", "MALAYSIA"];
+            const starts = ["PROJEK", "PROGRAM", "CADANGAN", "MEMBINA", "NAIKTARAF", "NAIK TARAF", "PENYELENGGARAAN", "PEROLEHAN", "KERJA-KERJA", "KAJIAN", "PEMBINAAN", "MENAIKTARAF"];
+            const stateRegex = new RegExp(`\\b(${starts.join('|')})\\b.{5,200}?\\b(${states.join('|')})\\b`, 'i');
+            if (cleanText.match(stateRegex)) return cleanText.match(stateRegex)[0].replace(/\s+/g, ' ').replace(/[.,:;]+$/, '').trim();
+            const generalRegex = new RegExp(`\\b(${starts.join('|')})\\b(?:\\s+\\S+){1,16}`, 'i');
+            const generalMatch = cleanText.match(generalRegex);
             if (generalMatch) {
-                let cleanTitle = generalMatch[0];
-                const stopPhrases = [" DENGAN KOS", " YANG", " BAGI", " DI BAWAH", " MERUPAKAN", " UNTUK"];
-                stopPhrases.forEach(phrase => {
-                    const idx = cleanTitle.toUpperCase().indexOf(phrase);
-                    if (idx > -1) cleanTitle = cleanTitle.substring(0, idx);
+                let potentialTitle = generalMatch[0];
+                [" DENGAN KOS", " YANG", " BAGI", " DI BAWAH", " MERUPAKAN", " UNTUK", " BERNILAI", " BERJUMLAH", " TELAH"].forEach(p => {
+                    const idx = potentialTitle.toUpperCase().indexOf(p);
+                    if (idx > -1) potentialTitle = potentialTitle.substring(0, idx);
                 });
-                return cleanTitle.replace(/\s+/g, ' ').replace(/[.,:;]+$/, '').trim();
+                return potentialTitle.replace(/[.,:;]+$/, '').trim();
             }
-            return "Tiada Data";
+            const pCodeMatch = text.match(/(?:P[\d]{14}\s+-\s+)(.*?)(?:\s+PERKARA\s+|Sila)/i);
+            if(pCodeMatch) return pCodeMatch[1].trim();
+            return "";
         }
 
-        function getNumericValue(rawAmount) {
-            if (rawAmount === "Tiada Data" || !rawAmount) return NaN;
-            let amount = rawAmount.trim();
-            let isMillion = false;
-            if (amount.match(/(juta|million|mil|j)/i)) {
-                isMillion = true;
-                amount = amount.replace(/(juta|million|mil|j)/i, '').trim();
-            }
-            let cleaned = amount.replace(/RM\s*/i, '').replace(/\s*\([^)]*\)/g, '').replace(/,/g, '');
-            if (!cleaned) return NaN;
-            let numericValue = parseFloat(cleaned);
-            if (isNaN(numericValue)) return NaN;
-            if (isMillion) {
-                numericValue = numericValue * 1000000;
-            }
-            return numericValue;
-        }
-
-        function formatCurrency(rawAmount) {
-            if (rawAmount === "Tiada Data") return rawAmount;
-            let amount = rawAmount.trim();
-            let isMillion = false;
-            if (amount.match(/(juta|million|mil|j)/i)) {
-                isMillion = true;
-                amount = amount.replace(/(juta|million|mil|j)/i, '').trim();
-            }
-            let cleaned = amount.replace(/RM\s*/i, '').replace(/\s*\([^)]*\)/g, '').replace(/,/g, '');
-            if (!cleaned) return "Tiada Data";
-            let numericValue = parseFloat(cleaned);
-            if (isNaN(numericValue)) return "Tiada Data";
-            if (isMillion) {
-                numericValue = numericValue * 1000000;
-            }
-            cleaned = numericValue.toFixed(2); 
-            const parts = cleaned.split('.');
-            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-            return `RM${parts.join('.')}`;
-        }
-        
-        function extractPotentialCosts(text) {
-            const aggressiveCurrencyRegex = /([\d,]+(?:\.\d{2})?(?:\s*(?:juta|million|mil|j))?)/ig;
-            const matches = [...text.matchAll(aggressiveCurrencyRegex)];
-            const rawCosts = new Set();
-            
+        // --- Contextual Cost Scanner ---
+        function scanContextualCosts(text) {
+            const matches = [...text.matchAll(/(?:RM\s*)?([\d,]+(?:\.\d{2})?(?:\s*(?:juta|million|mil|j))?)/ig)];
+            const validCosts = new Set();
             matches.forEach(match => {
-                const rawValue = match[1];
-                if (rawValue) {
-                    const numericValue = getNumericValue(rawValue); 
-                    if (!isNaN(numericValue) && numericValue >= 10000) { 
-                        const formatted = formatCurrency(rawValue);
-                        if (formatted !== "Tiada Data" && formatted.startsWith('RM')) {
-                             rawCosts.add(formatted);
-                        }
-                    }
+                const fullMatch = match[0]; const valStr = match[1]; const index = match.index;
+                let cleanVal = valStr.trim().replace(/(juta|million|mil|j)/i, '');
+                let isMil = valStr.match(/(juta|million|mil|j)/i);
+                let num = parseFloat(cleanVal.replace(/,/g, ''));
+                let isYear = (num >= 1990 && num <= 2035 && !valStr.includes('.'));
+                if (isYear && !fullMatch.toUpperCase().includes("RM")) {
+                    const strictLookback = text.substring(Math.max(0, index - 15), index).toLowerCase();
+                    if (!strictLookback.includes("kos")) return;
+                }
+                if (num < 500 && !fullMatch.toUpperCase().includes("RM")) return;
+                const lookbackText = text.substring(Math.max(0, index - 60), index).toLowerCase();
+                const keywords = ["kos", "cost", "harga", "price", "nilai", "value", "jumlah", "total", "sebanyak", "berjumlah", "siling", "peruntukan", "rmke", "rp", "rolling", "perbelanjaan", "belanja", "kontrak", "contract"];
+                const hasKeyword = keywords.some(k => lookbackText.includes(k));
+                if (fullMatch.toUpperCase().includes("RM") || hasKeyword) {
+                    if(isMil) num = num * 1000000;
+                    validCosts.add(fmtMoney(num));
                 }
             });
-            return Array.from(rawCosts).sort(); 
+            return Array.from(validCosts).sort((a,b) => getNum(b) - getNum(a));
         }
 
-        function populateCostDropdown(costs, selectId) {
+        function fillDropdown(selectId, costs) {
             const select = document.getElementById(selectId);
-            const currentValue = select.value;
-            select.innerHTML = '';
-            
-            let defaultOption = document.createElement('option');
-            defaultOption.value = 'auto';
-            defaultOption.textContent = '-- Pilih Kos Automatik (Teks Asal) --';
-            select.appendChild(defaultOption);
-            
-            if (selectId.includes('AdditionalCostSelect')) {
-                let zeroOption = document.createElement('option');
-                zeroOption.value = 'RM0.00';
-                zeroOption.textContent = 'RM0.00 (Tiada Penambahan)';
-                select.appendChild(zeroOption);
-            }
-            if (selectId.includes('PDAAsal') || selectId.includes('PDAPindaan')) {
-                 let zeroOption = document.createElement('option');
-                 zeroOption.value = 'RM0.00';
-                 zeroOption.textContent = 'RM0.00 (Tiada Nilai)';
-                 select.appendChild(zeroOption);
-            }
-
-            costs.forEach(cost => {
-                let option = document.createElement('option');
-                option.value = cost;
-                option.textContent = cost;
-                select.appendChild(option);
-            });
-            
-            if (currentValue && select.querySelector(`option[value="${currentValue}"]`)) {
-                select.value = currentValue;
-            } else if (currentValue === 'RM0.00' && (selectId.includes('AdditionalCostSelect') || selectId.includes('PDA'))) {
-                 select.value = 'RM0.00';
-            }
+            select.innerHTML = '<option value="">-- Pilih Auto --</option>';
+            costs.forEach(c => { let opt = document.createElement('option'); opt.value = c; opt.text = c; select.add(opt); });
         }
-        
-        function handleTextareaChange() {
+        function syncSelectToInput(selectId, inputId) {
+            const val = document.getElementById(selectId).value;
+            if(val) document.getElementById(inputId).value = val;
+        }
+
+        // --- 1. PARSING LOGIC ---
+        function parseTextToInputs() {
             const text = document.getElementById('inputText').value;
-            let normalizedText = text.replace(/\s+/g, ' ').replace(/\(P\d{14}\)/ig, ''); 
-            const potentialCosts = extractPotentialCosts(normalizedText);
+            if (!text.trim()) return;
+
+            let pName = smartExtractProjectName(text);
+            if(pName) document.getElementById('inp_projectName').value = pName;
+            document.getElementById('inp_codeP').value = safeExtract(text, /\(P[\d]{14}\)/i, 0).replace(/[()]/g,'');
+            document.getElementById('inp_approvalInfo').value = smartExtractApprovalInfo(text);
+
+            const filteredCosts = scanContextualCosts(text);
+            ['sel_costA', 'sel_costAdd', 'sel_costRev', 'sel_valB', 'sel_valD'].forEach(id => fillDropdown(id, filteredCosts));
+
+            let smartCostA = safeExtract(text, /(?:Rolling\s+Plan|RMKe|diluluskan|projek\s+sambungan)[\s\S]{1,200}?(?:dengan\s+kos|kos\s+sebanyak|kos\s+berjumlah|kos\s+keseluruhan|kos\s+asal)(?:.*?)RM?\s*([\d,]+(?:\.\d{2})?)/i, 1);
+            if (!smartCostA) smartCostA = safeExtract(text, /(?:kos asal|kos yang diluluskan|kos berjumlah).*?RM?([\d,]+\.\d{2})/i, 1);
+            let rawAdd = safeExtract(text, /(?:peningkatan|tambahan).*?RM?([\d,]+\.\d{2})/i, 1);
+            let rawRev = safeExtract(text, /(?:kos baharu|kos dipinda|meningkat kepada).*?RM?([\d,]+\.\d{2})/i, 1);
             
-            populateCostDropdown(potentialCosts, 'approvedCostSelect');
-            populateCostDropdown(potentialCosts, 'additionalCostSelect');
-            populateCostDropdown(potentialCosts, 'revisedCostSelect');
-            populateCostDropdown(potentialCosts, 'selectPDAAsalCost');
-            populateCostDropdown(potentialCosts, 'selectPDAPindaanCost');
-        }
-        
-        function toTitleCase(str) {
-            if (!str) return '';
-            return str.toLowerCase().split(/\s+/).map(function(word) {
-                if (word.length === 0) return '';
-                return word.charAt(0).toUpperCase() + word.slice(1);
-            }).join(' ');
-        }
+            if(smartCostA) document.getElementById('inp_costA').value = "RM" + smartCostA;
+            if(rawAdd) document.getElementById('inp_costAdd').value = "RM" + rawAdd;
+            if(rawRev) document.getElementById('inp_costRev').value = "RM" + rawRev;
 
+            let matchB = text.match(/(\d+\.\s+)?(.*?)\s*\[B\]\s*RM?\s*([\d,]+\.\d{2})/i);
+            if(matchB) { document.getElementById('inp_labelB').value = matchB[2].trim() + " [B]"; document.getElementById('inp_valB').value = "RM" + matchB[3]; }
+            let matchD = text.match(/(\d+\.\s+)?(.*?)\s*\[D\]\s*RM?\s*([\d,]+\.\d{2})/i);
+            if(matchD) { document.getElementById('inp_labelD').value = matchD[2].trim() + " [D]"; document.getElementById('inp_valD').value = "RM" + matchD[3]; }
 
-        // --- FUNGSI MENJANA TEKS PENUTUP PIAWAI ---
-        function generateClosingSentence(projectName, changeType, increaseAmountDisplay, kosBaharuContent) {
-            const closingSentenceArea = document.getElementById('closingSentenceArea');
-            let mainSentence;
-            const titleCaseProjectName = toTitleCase(projectName); 
-
-            if (changeType === 'increase') {
-                mainSentence = `Bahagian ini tiada halangan dengan pertambahan kos Projek ${titleCaseProjectName} sebanyak ${increaseAmountDisplay} dengan menjadikan kos projek baharu berjumlah ${kosBaharuContent}.`;
-            } else if (changeType === 'decrease') {
-                mainSentence = `Bahagian ini tiada halangan dengan pengurangan kos Projek ${titleCaseProjectName} sebanyak ${increaseAmountDisplay} dengan menjadikan kos projek baharu berjumlah ${kosBaharuContent}.`;
-            } else {
-                mainSentence = `Bahagian ini tiada halangan untuk meneruskan butiran Projek ${titleCaseProjectName} berdasarkan kos sedia ada berjumlah ${kosBaharuContent}.`;
+            let valA = getNum(document.getElementById('inp_costA').value);
+            let valAdd = getNum(document.getElementById('inp_costAdd').value);
+            let valRev = getNum(document.getElementById('inp_costRev').value);
+            if(valA > 0 && valAdd !== 0 && valRev === 0) {
+                document.getElementById('inp_costRev').value = fmtMoney(valA + valAdd);
             }
-            
-            const fullText = `Dengan mengambilkira ulasan di perkara XX dan hasil
-semakan dokumen berkaitan. ${mainSentence} Walaubagaimanapun kaedah untuk
-menampung peningkatan kos ini adalah berdasarkan pertimbangan pihak tuan.
-
-Ulasan Bahagian
-ini adalah berdasarkan kepada maklumat yang diterima sahaja dan pihak
-Kementerian adalah bertanggungjawab sepenuhnya dalam mematuhi peraturan semasa
-Kerajaan yang berkuat kuasa.
-
-Sekian ulasan
-Bahagian ini dan dikembalikan semula untuk pertimbangan pihak tuan selanjutnya.
-Sekian, terima
-kasih.
-
-“MALAYSIA MADANI”
-
-“BERKHIDMAT UNTUK NEGARA”
-
-
-Saya yang
-menjalankan amanah,
-
-
-(Ir. Ts. ANITA BINTI MOHAMED SHAFIE)`;
-            closingSentenceArea.value = fullText.trim();
-        }
-        
-        // --- FUNGSI JANA JADUAL PERINCIAN KENAIKAN KOS (Excel Friendly) ---
-        function generateCostBreakdownTable(approvedCost, pdaAsal, pdaPindaan) {
-            const costBreakdownTableDiv = document.getElementById('costBreakdownTable');
-            costBreakdownTableDiv.innerHTML = ''; 
-
-            const numA = getNumericValue(approvedCost);
-            const numB = getNumericValue(pdaAsal);
-            const numD = getNumericValue(pdaPindaan);
-            
-            if (isNaN(numA) || isNaN(numB) || isNaN(numD)) {
-                costBreakdownTableDiv.innerHTML = '<p class="text-gray-600">Sila masukkan/pilih nilai sah untuk Kos Diluluskan (A), PDA Asal (B), dan PDA Pindaan (D) untuk mengira pecahan kos.</p>';
-                return;
-            }
-
-            const numC = numA - numB;               
-            const numE = numD - numB;               
-            const numF = numE - numC;               
-
-            const displayA = formatCurrency(numA.toFixed(2));
-            const displayB = formatCurrency(numB.toFixed(2));
-            const displayC = formatCurrency(numC.toFixed(2));
-            const displayD = formatCurrency(numD.toFixed(2));
-            const displayE = formatCurrency(numE.toFixed(2));
-            const displayF = formatCurrency(numF.toFixed(2));
-
-            let html = '<table class="excel-table" id="costBreakdownTable">';
-            html += '<thead><tr><th style="width:5%">Bil.</th><th>Perkara</th><th style="width:20%">JUMLAH (RM)</th><th style="width:20%">BAKI (RM)</th></tr></thead>';
-            html += '<tbody>';
-            html += `<tr><td class="center-col">A</td><td>Kos yang diluluskan</td><td class="money-col">${displayA.replace('RM', '')}</td><td></td></tr>`;
-            html += `<tr><td class="center-col">B</td><td>Kos PDA Asal [B]</td><td class="money-col">${displayB.replace('RM', '')}</td><td></td></tr>`;
-            html += `<tr><td class="center-col">C</td><td>Baki kos [C=A-B]</td><td></td><td class="money-col">${displayC.replace('RM', '')}</td></tr>`;
-            html += `<tr><td class="center-col">D</td><td>Kos PDA Pindaan [D]</td><td class="money-col">${displayD.replace('RM', '')}</td><td></td></tr>`;
-            html += `<tr><td class="center-col">E</td><td>Peningkatan Harga [E=D-B]</td><td></td><td class="money-col">${displayE.replace('RM', '')}</td></tr>`;
-            html += `<tr class="highlight-row"><td></td><td>KOS TAMBAHAN DIPERLUKAN [F=E-C]</td><td></td><td class="money-col">${displayF.replace('RM', '')}</td></tr>`;
-            html += '</tbody></table>';
-            costBreakdownTableDiv.innerHTML = html;
         }
 
+        // --- 2. GENERATION LOGIC ---
+        function generateOutputs() {
+            // Read Inputs
+            let pName = document.getElementById('inp_projectName').value || "NAMA PROJEK";
+            let pInfo = document.getElementById('inp_approvalInfo').value;
+            let pCode = document.getElementById('inp_codeP').value;
+            let valA = getNum(document.getElementById('inp_costA').value);
+            let valRev = getNum(document.getElementById('inp_costRev').value);
+            let lblB = document.getElementById('inp_labelB').value || "Kos PDA Asal [B]";
+            let valB = getNum(document.getElementById('inp_valB').value);
+            let lblD = document.getElementById('inp_labelD').value || "Kos PDA Pindaan [D]";
+            let valD = getNum(document.getElementById('inp_valD').value);
+            let manualText = document.getElementById('inp_manualText').value;
 
-        // --- FUNGSI UTAMA: GENERATE TABLE (UPDATED: AUTO DETECT A, B, D) ---
-        function generateTable() {
-            const text = document.getElementById('inputText').value.replace(/\s+/g, ' '); 
-            const outputTableDiv = document.getElementById('outputTable');
-            const condensedOutputContainer = document.getElementById('condensedOutputContainer');
-            const messageBox = document.getElementById('messageBox');
-            
-            // Collect User Inputs
-            const selectedApprovedCost = document.getElementById('approvedCostSelect').value; 
-            const manualApprovedCostInput = document.getElementById('manualApprovedCostInput').value; 
-            const selectedAdditionalCost = document.getElementById('additionalCostSelect').value; 
-            const manualAdditionalCostInput = document.getElementById('manualAdditionalCostInput').value; 
-            const selectedRevisedCost = document.getElementById('revisedCostSelect').value; 
-            const manualRevisedCostInput = document.getElementById('manualRevisedCostInput').value; 
-            const selectedPDAAsalCost = document.getElementById('selectPDAAsalCost').value;
-            const manualPDAAsalInput = document.getElementById('manualPDAAsalInput').value;
-            const selectedPDAPindaanCost = document.getElementById('selectPDAPindaanCost').value;
-            const manualPDAPindaanInput = document.getElementById('manualPDAPindaanInput').value;
-            const manualProjectNameInput = document.getElementById('manualProjectNameInput').value.trim();
-
-            messageBox.classList.add('hidden');
-            outputTableDiv.innerHTML = ''; 
-            condensedOutputContainer.innerHTML = ''; 
-
-            if (!text.trim() && !manualProjectNameInput && !manualApprovedCostInput) {
-                messageBox.textContent = "Sila masukkan teks untuk dianalisis.";
-                messageBox.classList.remove('hidden');
-                document.getElementById('closingSentenceArea').value = '';
-                generateCostBreakdownTable('Tiada Data', 'Tiada Data', 'Tiada Data'); 
-                return;
+            // Calc Diff
+            let diff = valRev - valA;
+            let diffDetails = "";
+            if (valA > 0 && diff !== 0) {
+                let pct = ((Math.abs(diff) / valA) * 100).toFixed(2);
+                let colorClass = diff > 0 ? "diff-increase" : "diff-decrease";
+                let word = diff > 0 ? "Peningkatan" : "Pengurangan";
+                diffDetails = `<br/><span style="font-size:0.85em; color:#555;">${word}:</span><br/><span class="${colorClass}">${fmtMoney(Math.abs(diff)).replace('RM','')}</span><span class="percentage-tag">@ ${pct}%</span>`;
             }
 
-            const currencyCapture = /([\d,]+(?:\.\d+)?(?:\s*(?:juta|million|mil|j))?)/i; 
-            const currencyCaptureGroup = 1;
+            // Calc Breakdown
+            let valC = valA - valB;
+            let valE = valD - valB;
+            let valF = valE - valC;
 
-            // --- DATA EXTRACTION ---
-            const regexP14 = /PROJEK\s*:\s*(P[\d]{14})/i; 
-            let codeP = safeExtract(text, regexP14);
-            const regexProjectNameSpecific = /(?:P[\d]{14}\s+-\s+)(.*?)(?:\s+PERKARA\s+|Sila)/i;
-            let projectName = safeExtract(text, regexProjectNameSpecific);
-            if (projectName === "Tiada Data") { projectName = smartExtractProjectName(text); }
-            if (manualProjectNameInput !== "") { projectName = manualProjectNameInput; }
-            
-            let approvalInfo = safeExtract(text, /(Rolling Plan.*?(?:RMKe-\d+)?(?: Tahun \d{4})?)(?:\s+dengan kos|\s+kos keseluruhan|\s+dengan siling|\s+Projek ini telah diluluskan|\s+bagi tempoh pelaksanaan|[\.,])/i);
-            
-            // --- NARRATIVE COST EXTRACTION ---
-            const approvedCostPrefixes = [ 'dengan kos berjumlah', 'daripada kos yang diluluskan berjumlah', 'kos RM', 'kos asal sebanyak' ];
-            let approvedCostRaw = safeExtract(text, new RegExp(`(?:${approvedCostPrefixes.join('|')})\\s*RM?${currencyCapture.source}`, 'i'), currencyCaptureGroup);
-            let approvedCost = formatCurrency(approvedCostRaw);
-            
-            const additionalCostPrefixes = [ 'iaitu peningkatan sebanyak', 'terdapat peningkatan sebanyak', 'melebihi kos kelulusan asal sebanyak', 'pertambahan sebanyak' ];
-            let additionalCostRaw = safeExtract(text, new RegExp(`(?:${additionalCostPrefixes.join('|')})\\s*RM?${currencyCapture.source}`, 'i'), currencyCaptureGroup);
-            if (additionalCostRaw === "Tiada Data") {
-                 const sayMatch = text.match(/RM[\d,]+\.\d{2}\s+\(say:\s*RM?([\d,]+\.\d{2})\)/i);
-                 if (sayMatch && sayMatch[1]) { additionalCostRaw = sayMatch[1]; } 
+            // --- CONDENSED TABLE ---
+            let nameBlock = pName.toUpperCase() + (pCode ? ` (${pCode})` : "");
+            let htmlCondensed = `
+            <p class="italic text-gray-500 text-sm mb-1">Jadual Ringkas:</p>
+            <table class="excel-table">
+                <thead><tr><th style="width:5%">Bil</th><th style="width:50%">Nama Projek</th><th style="width:20%">Kos Asal (RM)</th><th style="width:25%">Kos Baharu (RM)</th></tr></thead>
+                <tbody><tr><td class="center-col">(i)</td><td style="padding:10px"><b>${nameBlock}</b><br/>- ${pInfo}</td><td class="money-col"><b>${fmtMoney(valA).replace('RM','')}</b></td><td class="money-col"><b>${fmtMoney(valRev).replace('RM','')}</b>${diffDetails}</td></tr></tbody>
+            </table>`;
+            document.getElementById('master-condensed').innerHTML = htmlCondensed;
+
+            // --- MANUAL TEXT MIDDLE SECTION ---
+            let htmlManual = "";
+            if(manualText.trim()) {
+                 htmlManual = manualText.split('\n').map(line => `<p>${line}</p>`).join('');
             }
-            let additionalCost = formatCurrency(additionalCostRaw);
-            
-            let revisedCostRaw = safeExtract(text, new RegExp(`(?:kos dipinda berjumlah|kos baharu bagi projek ini adalah|PDA berjumlah|kos projek adalah berjumlah)\\s*RM?${currencyCapture.source}`, 'i'), currencyCaptureGroup);
-            let revisedCost = formatCurrency(revisedCostRaw);
+            document.getElementById('master-manual-text').innerHTML = htmlManual;
 
-            // --- NEW: SPECIFIC TABLE EXTRACTION ([A], [B], [D]) ---
-            // If the text contains the breakdown table (e.g. "[A]", "[B]"), capture those values directly
-            const rawValA = safeExtract(text, /\[A\].*?([\d,]+\.\d{2})/i, 1);
-            const rawValB = safeExtract(text, /\[B\].*?([\d,]+\.\d{2})/i, 1);
-            const rawValD = safeExtract(text, /\[D\].*?([\d,]+\.\d{2})/i, 1);
-            
-            // If explicit table values found, they take precedence for the respective variables
-            if (rawValA !== "Tiada Data") approvedCost = formatCurrency(rawValA);
-            // We use temp variables for B and D so we can check overrides later
-            let pdaAsal = rawValB !== "Tiada Data" ? formatCurrency(rawValB) : 'Tiada Data';
-            let pdaPindaan = rawValD !== "Tiada Data" ? formatCurrency(rawValD) : 'Tiada Data';
+            // --- BREAKDOWN TABLE ---
+            let htmlBreakdown = `
+            <p class="italic text-gray-500 text-sm mb-1">Jadual Perincian:</p>
+            <table class="excel-table">
+                <thead><tr><th style="width:5%">Bil.</th><th>Perkara</th><th style="width:20%">JUMLAH (RM)</th><th style="width:20%">BAKI (RM)</th></tr></thead>
+                <tbody>
+                    <tr><td class="center-col">A</td><td>Kos yang diluluskan</td><td class="money-col">${fmtMoney(valA).replace('RM','')}</td><td></td></tr>
+                    <tr><td class="center-col">B</td><td>${lblB}</td><td class="money-col">${fmtMoney(valB).replace('RM','')}</td><td></td></tr>
+                    <tr><td class="center-col">C</td><td>Baki kos [C=A-B]</td><td></td><td class="money-col">${fmtMoney(valC).replace('RM','')}</td></tr>
+                    <tr><td class="center-col">D</td><td>${lblD}</td><td class="money-col">${fmtMoney(valD).replace('RM','')}</td><td></td></tr>
+                    <tr><td class="center-col">E</td><td>Peningkatan Harga [E=D-B]</td><td></td><td class="money-col">${fmtMoney(valE).replace('RM','')}</td></tr>
+                    <tr class="highlight-row"><td></td><td>KOS TAMBAHAN DIPERLUKAN [F=E-C]</td><td></td><td class="money-col">${fmtMoney(valF).replace('RM','')}</td></tr>
+                </tbody>
+            </table>`;
+            document.getElementById('master-breakdown').innerHTML = htmlBreakdown;
 
-            // --- APPLY OVERRIDES (MANUAL INPUTS ALWAYS WIN) ---
-            if (selectedApprovedCost && selectedApprovedCost !== "auto") { approvedCost = selectedApprovedCost; } else if (manualApprovedCostInput.trim() !== "") { approvedCost = formatCurrency(manualApprovedCostInput); }
-            if (selectedAdditionalCost && selectedAdditionalCost !== "auto") { additionalCost = selectedAdditionalCost; } else if (manualAdditionalCostInput.trim() !== "") { additionalCost = formatCurrency(manualAdditionalCostInput); }
-            if (selectedRevisedCost && selectedRevisedCost !== "auto") { revisedCost = selectedRevisedCost; } else if (manualRevisedCostInput.trim() !== "") { revisedCost = formatCurrency(manualRevisedCostInput); }
+            // --- CLOSING SENTENCE ---
+            let tcTitle = pName.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+            let mainSent = "";
+            if (diff > 0) mainSent = `Bahagian ini tiada halangan dengan pertambahan kos Projek ${tcTitle} sebanyak ${fmtMoney(diff)} dengan menjadikan kos projek baharu berjumlah ${fmtMoney(valRev)}.`;
+            else if (diff < 0) mainSent = `Bahagian ini tiada halangan dengan pengurangan kos Projek ${tcTitle} sebanyak ${fmtMoney(Math.abs(diff))} dengan menjadikan kos projek baharu berjumlah ${fmtMoney(valRev)}.`;
+            else mainSent = `Bahagian ini tiada halangan untuk meneruskan butiran Projek ${tcTitle} berdasarkan kos sedia ada berjumlah ${fmtMoney(valRev)}.`;
 
-            // Apply overrides for B and D
-            if (manualPDAAsalInput.trim() !== "") { pdaAsal = formatCurrency(manualPDAAsalInput); } else if (selectedPDAAsalCost && selectedPDAAsalCost !== "auto") { pdaAsal = selectedPDAAsalCost; }
-            if (manualPDAPindaanInput.trim() !== "") { pdaPindaan = formatCurrency(manualPDAPindaanInput); } else if (selectedPDAPindaanCost && selectedPDAPindaanCost !== "auto") { pdaPindaan = selectedPDAPindaanCost; }
-
-            // --- INTELLIGENT AUTO-CALCULATION ---
-            const valAsal = getNumericValue(approvedCost);
-            const valTambah = getNumericValue(additionalCost);
-            const valBaharu = getNumericValue(revisedCost);
-
-            if (!isNaN(valAsal) && !isNaN(valTambah) && valTambah !== 0) {
-                if (isNaN(valBaharu) || valBaharu === valAsal) {
-                     revisedCost = formatCurrency((valAsal + valTambah).toFixed(2));
-                }
-            }
-
-            // --- FINAL CALCULATIONS ---
-            const numericApprovedCost = getNumericValue(approvedCost);
-            let numericRevisedCost = getNumericValue(revisedCost);
-            let increaseAmountNumeric = numericRevisedCost - numericApprovedCost;
-            let increaseAmountDisplay = formatCurrency(Math.abs(increaseAmountNumeric).toFixed(2));
-            let changeType = increaseAmountNumeric > 0 ? 'increase' : (increaseAmountNumeric < 0 ? 'decrease' : 'none');
-            let kosBaharuContent = formatCurrency(numericRevisedCost.toFixed(2));
-            if (kosBaharuContent === "Tiada Data" || !kosBaharuContent.startsWith("RM")) { kosBaharuContent = approvedCost; }
-            
-            generateCostBreakdownTable(approvedCost, pdaAsal, pdaPindaan);
-
-            // --- OTHER EXTRACTIONS ---
-            let codeSecondary = safeExtract(text, /\(([A-Z]{3}[\d]+)\)/i); 
-            let agency = safeExtract(text, /diserahkan kepada\s+(.*?)(?:\s+untuk dilaksanakan)|dilaksanakan oleh\s+(.*?)(?:\s+secara kaedah)|projek di bawah\s+(.*?)(?:\s+\(JBPM\))/i, 1);
-            let projectStatus = safeExtract(text, /projek ini\s+(dalam status.*?)(?:\s+dan belum ada perbelanjaan|\s+Projek ini telah siap)/i);
-            let implementationPeriod = safeExtract(text, /tempoh pelaksanaan bermula tahun (\d{4}) hingga (\d{4})/i, 0); 
-            let projectOutput = safeExtract(text, /(melibatkan pembangunan|Skop asal yang diluluskan bagi projek ini adalah melibatkan|berdasarkan skop tersebut|pembangunan\s+.*?)\s+(.*?)(?:\s+dengan kos|\s+yang merangkumi|\s+\. Projek ini)/i, 2); 
-            let spentCost = formatCurrency(safeExtract(text, /(?:Belanja keseluruhan projek berjumlah|sejumlah|perbelanjaan keseluruhan projek berjumlah)\s*RM?${currencyCapture.source}/i, currencyCaptureGroup));
-
-            // Detail Table
-            const data = [ ["Nama Projek", projectName], ["Kod Projek Utama (P)", codeP], ["Kod Projek (Lain-lain)", codeSecondary], ["Agensi Projek", agency], ["Maklumat Kelulusan", approvalInfo], ["Status Pelaksanaan", projectStatus], ["Tempoh Pelaksanaan", implementationPeriod], ["Output Projek / Skop Utama", projectOutput], ["--- KEWANGAN ASAS ---", ""], ["Kos Diluluskan (Asal)", approvedCost], ["Belanja Keseluruhan Sehingga Kini", spentCost] ];
-            if (additionalCost !== "Tiada Data" || revisedCost !== "Tiada Data") { data.push(["--- BUTIRAN PINDAAN KOS ---", ""]); if (additionalCost !== "Tiada Data") { data.push(["Penambahan / Tambahan Kos", additionalCost]); } if (revisedCost !== "Tiada Data") { data.push(["Kos Dipinda (Disemak)/Baharu", revisedCost]); } }
-            let html = '<table class="table-output">'; html += '<thead><tr><th style="width: 35%;">Butiran</th><th>Maklumat</th></tr></thead>'; html += '<tbody>';
-            data.forEach(([label, value]) => { if (label.startsWith('---')) { html += `<tr class="bg-gray-100"><td colspan="2" class="text-section-header text-center">${label.replace(/---/g, '').trim()}</td></tr>`; } else { let displayValue = value === "RM" ? "Tiada Data" : value; let valueClass = ''; if (label === "Belanja Keseluruhan Sehingga Kini" && displayValue !== "Tiada Data") { valueClass = 'spent-amount'; } else if (label.includes("Kos") || label.includes("Tambahan")) { valueClass = 'font-bold'; } html += `<tr><td>${label}</td><td class="${valueClass}">${displayValue}</td></tr>`; } });
-            html += '</tbody></table>'; outputTableDiv.innerHTML = html;
-
-            // --- CONDENSED TABLE (EXCEL FRIENDLY) ---
-            if (approvedCost !== "Tiada Data" && !isNaN(numericApprovedCost)) {
-                let nameCodeLine = projectName.toUpperCase(); if (codeSecondary !== "Tiada Data") { nameCodeLine += ` (${codeSecondary})`; }
-                let increaseDetails = '';
-                if (increaseAmountDisplay !== "N/A" && increaseAmountNumeric !== 0) {
-                    const increaseWord = increaseAmountNumeric >= 0 ? "Peningkatan" : "Pengurangan";
-                    const increaseColorClass = increaseAmountNumeric >= 0 ? "diff-increase" : "diff-decrease";
-                    let percentageDetails = '';
-                    if (numericApprovedCost > 0) {
-                         let percentageVal = (Math.abs(increaseAmountNumeric) / numericApprovedCost) * 100;
-                         let percentageStr = percentageVal.toFixed(2);
-                         percentageDetails = `<br/><span class="percentage-tag">@ ${percentageStr}%</span>`;
-                    }
-                    increaseDetails = `<br/>
-                    <span style="font-size:0.85em; color:#555;">${increaseWord}:</span><br/>
-                    <span class="${increaseColorClass}">${increaseAmountDisplay.replace('RM', '')}</span>
-                    ${percentageDetails}`;
-                }
-                
-                // Using excel-table class here
-                const condensedTableHTML = `
-                <h3 class="text-xl font-semibold text-gray-800 mb-3 mt-8">Jadual Ringkas (Sedia Disalin)</h3>
-                <p class="text-sm text-gray-500 mb-2 italic">Format Excel (Sedia Disalin)</p>
-                <table id="tableCondensed" class="excel-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 5%; text-align: center;">Bil</th>
-                            <th style="width: 50%; text-align: center;">Nama Projek</th>
-                            <th style="width: 20%; text-align: center;">Kos Asal (RM)</th>
-                            <th style="width: 25%; text-align: center;">Kos Baharu (RM)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td class="center-col">(i)</td>
-                            <td style="padding: 10px;"><b>${nameCodeLine}</b><br/>- ${approvalInfo}</td>
-                            <td class="money-col"><b>${approvedCost.replace('RM', '')}</b></td>
-                            <td class="money-col"><b>${kosBaharuContent.replace('RM', '')}</b>${increaseDetails}</td>
-                        </tr>
-                    </tbody>
-                </table>`;
-                condensedOutputContainer.innerHTML = condensedTableHTML; 
-            } else { condensedOutputContainer.innerHTML = ''; }
-
-            // Closing Sentence
-            const finalProjectName = projectName !== "Tiada Data" ? projectName : "PROJEK BERKAITAN (SILA GANTI)";
-            if (kosBaharuContent !== "Tiada Data") { generateClosingSentence(finalProjectName, changeType, increaseAmountDisplay, kosBaharuContent); } 
-            else { document.getElementById('closingSentenceArea').value = `Sila masukkan data kewangan yang sah (Kos Asal, Penambahan, atau Kos Baharu) untuk menjana Teks Penutup Piawai.`; }
+            let htmlClosing = `
+            <p>Dengan mengambil kira ulasan di perkara XX dan hasil semakan dokumen berkaitan. ${mainSent} Walau bagaimanapun, kaedah untuk menampung peningkatan kos ini adalah berdasarkan pertimbangan pihak tuan.</p>
+            <p>Ulasan Bahagian ini adalah berdasarkan kepada maklumat yang diterima sahaja dan pihak Kementerian adalah bertanggungjawab sepenuhnya dalam mematuhi peraturan semasa Kerajaan yang berkuat kuasa.</p>
+            <p>Sekian ulasan Bahagian ini dan dikembalikan semula untuk pertimbangan pihak tuan selanjutnya.</p>
+            <p>Sekian, terima kasih.</p>
+            <p><b>“MALAYSIA MADANI”</b></p>
+            <p><b>“BERKHIDMAT UNTUK NEGARA”</b></p>
+            <p style="margin-top: 2em;">Saya yang menjalankan amanah,</p>
+            <p style="margin-top: 2em;"><b>(Ir. Ts. ANITA BINTI MOHAMED SHAFIE)</b></p>`;
+            document.getElementById('master-closing').innerHTML = htmlClosing;
         }
 
-        // =================================================================
-        // SKRIP UTAMA: NOC GENERATOR (UNCHANGED)
-        // =================================================================
-        function formatDateFormal(dateString) {
-            if (!dateString || dateString === 'N/A' || !dateString.includes('-')) { return dateString; }
-            const [day, monthAbbr, year] = dateString.split('-');
-            const monthMap = {
-                'JAN': 'Januari', 'FEB': 'Februari', 'MAR': 'Mac', 'APR': 'April',
-                'MAY': 'Mei', 'JUN': 'Jun', 'JUL': 'Julai', 'AUG': 'Ogos',
-                'SEP': 'September', 'OCT': 'Oktober', 'NOV': 'November', 'DEC': 'Disember'
+        // --- 3. NOC LOGIC ---
+        function handleNocInput() {
+            const text = document.getElementById('nocInput').value;
+            if(!text.trim()) return;
+            document.getElementById('noc-status').innerText = "Data diproses...";
+            
+            const stopRegex = /(NOC-ID|TARIKH\s*SURAT|TARIKH\s*PERMOHONAN|NAMA\s*KEMENTERIAN)/i;
+            let lines = text.split('\n');
+            let titleLines = [];
+            for(let l of lines) { if(l.trim() && stopRegex.test(l)) break; if(l.trim()) titleLines.push(l.trim()); }
+            let pTitle = titleLines.join(' ');
+
+            let rawText = text.toUpperCase();
+            const getVal = (k) => { let r = new RegExp(k + "\\s*([\\w\\/\\-\\.\\(\\)]+)", 'i'); let m = rawText.match(r); return m ? m[1] : "N/A"; };
+            let kemMatch = text.match(/NAMA KEMENTERIAN\s*([\w\s\/\.\(\)\-]+?)\s*(?:BAHAGIAN|LAMPIRAN|$)/i);
+            let ministry = kemMatch ? kemMatch[1].trim() : "N/A";
+            let ruj = getVal("NO. RUJUKAN SURAT");
+            const fmtDate = (d) => {
+                if(!d || d.length < 5) return d;
+                let [dd,mm,yy] = d.split('-');
+                const map = {'JAN':'Januari','FEB':'Februari','MAR':'Mac','APR':'April','MAY':'Mei','JUN':'Jun','JUL':'Julai','AUG':'Ogos','SEP':'September','OCT':'Oktober','NOV':'November','DEC':'Disember'};
+                return `${dd} ${map[mm]||mm} ${yy}`;
             };
-            const formalMonth = monthMap[monthAbbr.toUpperCase()];
-            return formalMonth ? `${day} ${formalMonth} ${year}` : dateString; 
-        }
-        function generateNOCVariationText(title) {
-            if (!title) return 'skop, komponen, output dan tempoh';
-            const upperTitle = title.toUpperCase();
-            const variations = [];
-            if (upperTitle.includes('PELARASAN KOS')) { return 'pelarasan kos'; }
-            if (upperTitle.includes('PERUBAHAN BAGI NAMA PROJEK') || upperTitle.includes('TUKAR NAMA PROJEK') ) { return 'nama projek'; }
-            if (upperTitle.includes('PEWUJUDAN BUTIRAN')) { return 'pewujudan butiran bagi projek'; }
-            if (upperTitle.includes('PENINGKATAN KOS') || upperTitle.includes('PENAMBAHAN KOS') || upperTitle.includes('KENAIKAN KOS') || upperTitle.includes('PERTAMBAHAN KOS') || upperTitle.includes('KOS') || upperTitle.includes('SILING')) { if (!variations.includes('kos')) variations.push('kos'); }
-            if (upperTitle.includes('SKOP')) { if (!variations.includes('skop')) variations.push('skop'); }
-            if (upperTitle.includes('KOMPONEN') || upperTitle.includes('OUTPUT')) { if (!variations.includes('komponen/output')) variations.push('komponen/output'); }
-            if (upperTitle.includes('TEMPOH') || upperTitle.includes('LANJUTAN MASA')) { if (!variations.includes('tempoh')) variations.push('tempoh'); }
-            const uniqueVariations = [...new Set(variations)];
-            if (uniqueVariations.length === 0) { return 'skop, komponen, output dan tempoh'; } 
-            else if (uniqueVariations.length === 1) { return uniqueVariations[0]; } 
-            else { const last = uniqueVariations.pop(); return uniqueVariations.join(', ') + ' dan ' + last; }
-        }
-        function extractProjectTitleNOC(text) {
-            const stopCondition = /(NOC-ID|TARIKH\s*SURAT|TARIKH\s*PERMOHONAN|NAMA\s*KEMENTERIAN|NO\.\s*RUJUKAN\s*SURAT|TARIKH\s*DITERIMA)/i;
-            const titleLines = [];
-            const lines = text.split('\n');
-            for (const line of lines) {
-                const trimmedLine = line.trim();
-                if (!trimmedLine) continue; 
-                if (stopCondition.test(trimmedLine)) { break; }
-                titleLines.push(trimmedLine);
-            }
-            let title = titleLines.join(' ').replace(/\s{2,}/g, ' ').trim();
-            return title || "SILA MASUKKAN TAJUK PROJEK DI ATAS DATA LAPORAN";
-        }
-        function processExtractedTextNOC(fullText) {
-            const outputElement = document.getElementById('noc-output-text');
-            const verificationElement = document.getElementById('noc-verification-data');
-            const finalOutputArea = document.getElementById('noc-final-output-area');
-            const projectTitle = extractProjectTitleNOC(fullText);
-            const rawText = fullText.replace(/\s+/g, ' ').toUpperCase(); 
-            const nextLabelsRegexRujukan = /LAMPIRAN|KATEGORI NOC|ULASAN BAHAGIAN YANG DIPERLUKAN|STATUS NOC|BAHAGIAN PENYELARAS/i;
-            const nextLabelsRegexKementerian = /BAHAGIAN PENYELARAS/i; 
-            function extractValue(keyword, text) {
-                if (keyword === 'NAMA KEMENTERIAN') {
-                    const kementerianRegex = new RegExp('NAMA KEMENTERIAN\\s*([\\w\\s\\/\\.\\(\\)\\-]+?)\\s*(?:' + nextLabelsRegexKementerian.source + '|$)', 'i' );
-                    const match = text.match(kementerianRegex);
-                    if (match && match[1]) { return match[1].trim(); } return 'N/A';
-                }
-                if (keyword === 'NO. RUJUKAN SURAT') {
-                    const rujukanRegex = new RegExp('NO\\. RUJUKAN SURAT\\s*([\\w\\/\\-\\.\\s\\(\\)]+?)\\s*(?:' + nextLabelsRegexRujukan.source + '|$)', 'i' );
-                    const rujukanMatch = text.match(rujukanRegex);
-                    if (rujukanMatch && rujukanMatch[1]) { return rujukanMatch[1].trim(); } return 'N/A';
-                }
-                const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                const regex = new RegExp(escapedKeyword + '\\s*([\\w\\/\\-\\.\\(\\)]+)', 'i');
-                const match = text.match(regex);
-                if (match && match[1]) { return match[1].trim().replace(/\s*-\s*/g, '-'); } return 'N/A';
-            }
-            const rawTarikhSurat = extractValue('TARIKH SURAT', rawText); 
-            const rawTarikhPermohonan = extractValue('TARIKH PERMOHONAN', rawText); 
-            const rawTarikhDiterima = extractValue('TARIKH DITERIMA', rawText); 
-            const rawTarikhEmel = rawTarikhDiterima !== 'N/A' ? rawTarikhDiterima : rawTarikhPermohonan;
-            const kementerian = extractValue('NAMA KEMENTERIAN', fullText); 
-            const noRujukan = extractValue('NO. RUJUKAN SURAT', fullText); 
-            const tarikhSurat = formatDateFormal(rawTarikhSurat); 
-            const tarikhPermohonan = formatDateFormal(rawTarikhPermohonan); 
-            const tarikhEmel = formatDateFormal(rawTarikhEmel); 
-            const greeting = "Tuan/Puan,"; 
-            const nocVariationPhrase = generateNOCVariationText(projectTitle); 
-            let introSentence;
-            if (nocVariationPhrase === 'skop, komponen, output dan tempoh') { introSentence = "Sebagaimana tuan/puan sedia maklum, butiran NOC adalah seperti berikut:"; } 
-            else { introSentence = `Sebagaimana tuan/puan sedia maklum, NOC bagi ${nocVariationPhrase} adalah seperti berikut:`; }
-            const referenceSentence = `Dengan hormatnya merujuk kepada perkara di atas, sistem INOC bertarikh ${tarikhPermohonan}, surat ${kementerian} dengan No. rujukan: ${noRujukan} bertarikh ${tarikhSurat} dan e-mel bertarikh ${tarikhEmel} adalah berkaitan.`;
-            const finalDocumentText = `${greeting}\n\n${projectTitle}\n\n${referenceSentence}\n\n${introSentence}`; 
-            const verificationOutput = `Verification of Extracted Data:\nProject Title: ${projectTitle}\nNOC Variation Phrase: ${nocVariationPhrase}\nIntro Sentence Used: ${introSentence}\nINOC Date (Permohonan): ${tarikhPermohonan} (Raw: ${rawTarikhPermohonan})\nMinistry Used: ${kementerian}\nSurat Rujukan: ${noRujukan}\nSurat Date: ${tarikhSurat} (Raw: ${rawTarikhSurat})\nE-mel Date (Diterima/Permohonan): ${tarikhEmel} (Raw: ${rawTarikhEmel})`;
-            document.getElementById('noc-progress-message').textContent = 'Extraction successful! Copy the clean text below.';
-            finalOutputArea.value = finalDocumentText; 
-            verificationElement.textContent = verificationOutput.trim();
-            outputElement.innerHTML = `${greeting}<br><br><span class="noc-project-title">${projectTitle}</span><br><span id="reference-sentence-display">${referenceSentence}</span><br><br><span>${introSentence}</span>`;
-            finalOutputArea.select(); 
-        }
-        function handleNocInputEvent() {
-             const fullText = document.getElementById('nocInput').value;
-            const progressElement = document.getElementById('noc-progress-message');
-            const finalOutputArea = document.getElementById('noc-final-output-area');
-            if (!fullText.trim()) {
-                document.getElementById('noc-output-text').innerHTML = ''; 
-                document.getElementById('noc-verification-data').textContent = 'Verification data will appear here, separated from the main text.';
-                finalOutputArea.value = 'Clean sentence will appear here for manual copying...';
-                progressElement.textContent = 'Waiting for input...';
-                return;
-            }
-            progressElement.textContent = 'Processing in real-time...';
-            processExtractedTextNOC(fullText);
+            let dtSurat = fmtDate(getVal("TARIKH SURAT"));
+            let dtPermohonan = fmtDate(getVal("TARIKH PERMOHONAN"));
+            let dtEmail = fmtDate(getVal("TARIKH DITERIMA") !== "N/A" ? getVal("TARIKH DITERIMA") : getVal("TARIKH PERMOHONAN"));
+
+            let variation = "skop, komponen, output dan tempoh";
+            if(pTitle.toUpperCase().includes("KOS")) variation = "kos";
+            let intro = variation === "kos" ? `Sebagaimana tuan/puan sedia maklum, NOC bagi ${variation} adalah seperti berikut:` : "Sebagaimana tuan/puan sedia maklum, butiran NOC adalah seperti berikut:";
+
+            let nocHTML = `
+                <p>Tuan/Puan,</p>
+                <p><b>${pTitle}</b></p>
+                <p>Dengan hormatnya merujuk kepada perkara di atas, sistem INOC bertarikh ${dtPermohonan}, surat ${ministry} dengan No. rujukan: ${ruj} bertarikh ${dtSurat} dan e-mel bertarikh ${dtEmail} adalah berkaitan.</p>
+                <p>${intro}</p>
+            `;
+            const masterNoc = document.getElementById('master-noc');
+            masterNoc.innerHTML = nocHTML;
+            masterNoc.className = "mb-8 text-black not-italic"; 
+            document.getElementById('noc-status').innerText = "Selesai!";
         }
 
-        window.onload = function() {
-            handleTextareaChange(); 
-            generateTable(); 
-            document.getElementById('nocInput').addEventListener('input', handleNocInputEvent);
-            document.getElementById('noc-final-output-area').addEventListener('click', function() { this.select(); });
-            handleNocInputEvent(); 
-            document.getElementById('closingSentenceArea').addEventListener('click', function() { this.select(); });
-        };
+        function downloadWord() {
+            const content = document.getElementById('masterMemoContainer').innerHTML;
+            const projectName = document.getElementById('inp_projectName').value || "Dokumen_NOC";
+            const filename = projectName.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30) + ".doc";
+
+            const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' " +
+                "xmlns:w='urn:schemas-microsoft-com:office:word' " +
+                "xmlns='http://www.w3.org/TR/REC-html40'>" +
+                "<head><meta charset='utf-8'><title>Export HTML to Word Document</title>" +
+                "<style>" +
+                "@page { size: A4; margin: 2.54cm; }" + 
+                "body { font-family: 'Arial', sans-serif; font-size: 11pt; text-align: justify; line-height: 1.0; }" + 
+                "table { width: 100%; border-collapse: collapse; border-spacing: 0; margin-bottom: 15px; }" +
+                "th, td { border: 1px solid black; padding: 2px 4px; font-size: 10pt; vertical-align: top; line-height: 1.0; mso-line-height-rule: exactly; }" + 
+                "p { margin: 0; padding: 0; margin-bottom: 1em; }" + 
+                ".table-container { margin-bottom: 1em; }" +
+                "th { background-color: #f0f0f0; text-align: center; font-weight: bold; }" +
+                ".money-col { text-align: right; white-space: nowrap; font-weight: bold; }" +
+                ".center-col { text-align: center; }" +
+                ".diff-increase { color: red; font-weight: bold; }" +
+                ".diff-decrease { color: green; font-weight: bold; }" +
+                "</style></head><body>";
+            const footer = "</body></html>";
+            const sourceHTML = header + content + footer;
+
+            const source = 'data:application/vnd.ms-word;charset=utf-8,' + encodeURIComponent(sourceHTML);
+            const fileDownload = document.createElement("a");
+            document.body.appendChild(fileDownload);
+            fileDownload.href = source;
+            fileDownload.download = filename;
+            fileDownload.click();
+            document.body.removeChild(fileDownload);
+        }
+
+        function saveData() {
+            const ids = ['nocInput','inputText','inp_projectName','inp_codeP','inp_approvalInfo','inp_costA','inp_costAdd','inp_costRev','inp_labelB','inp_valB','inp_labelD','inp_valD','inp_manualText'];
+            let d = {}; ids.forEach(id => d[id] = document.getElementById(id).value);
+            let blob = new Blob([JSON.stringify(d)], {type:'application/json'});
+            let url = URL.createObjectURL(blob);
+            let a = document.createElement('a'); a.href=url; a.download='data_projek.json'; a.click();
+        }
+        function loadData(input) {
+            let r = new FileReader();
+            r.onload = e => {
+                let d = JSON.parse(e.target.result);
+                for(let k in d) { if(document.getElementById(k)) document.getElementById(k).value = d[k]; }
+                generateOutputs(); handleNocInput();
+            };
+            r.readAsText(input.files[0]);
+        }
     </script>
 </body>
 </html>
